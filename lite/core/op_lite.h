@@ -130,6 +130,8 @@ class OpLite : public Registry {
                     lite::Tensor **output_var);
 
   virtual ~OpLite() = default;
+  std::vector<const Tensor *> input_tensor_ptrs_cache_{};
+  std::vector<Tensor *> output_tensor_ptrs_cache_{};
 
  protected:
   // Attach it with the runtime environment.
@@ -180,8 +182,8 @@ class OpLite : public Registry {
   std::unique_ptr<OpInfo> op_info_;
   // Infer Shape according to memory, if current input shapes are consistent
   // with that of previous inputs, output shapes of last time will be reused.
-  std::vector<const Tensor *> input_tensor_ptrs_cache_{};
-  std::vector<Tensor *> output_tensor_ptrs_cache_{};
+//   std::vector<const Tensor *> input_tensor_ptrs_cache_{};
+//   std::vector<Tensor *> output_tensor_ptrs_cache_{};
 
  private:
   // todo: it's prefered to combine last_input_shapes and

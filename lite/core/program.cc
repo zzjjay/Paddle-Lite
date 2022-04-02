@@ -641,19 +641,42 @@ void Instruction::Run() {
   profiler_->StartTiming(
       profile::Type::kCreate, profile_id_, kernel_->mutable_context());
 #endif
+  //(str) op_type = op_->Type()
+  //(ptr) op_info = op_->op_infor() ?
+  // op_info.input_names()
+  // op_info.output_names()
+  std::cout<<"test(op null)\n";
   CHECK(op_) << "op null";
+  std::cout<<"test(kernel null)\n";
   CHECK(kernel_) << "kernel null";
-
+  std::cout<<"test(first_epoch_)\n";
   if (first_epoch_) {
     first_epoch_ = false;
     CHECK(op_->CheckShape());
   }
-
+  std::cout<<"test(run_once)\n";
   if (op_->run_once() && has_run_) {
     return;
   }
-
+  std::cout<<"test(infershape)\n";
   op_->InferShape();
+
+  std::cout<<op_->Type();
+
+  for(auto it : op_->input_tensor_ptrs_cache_)
+    std::cout << " in:"<<it->dims().repr();
+  for(auto it : op_->output_tensor_ptrs_cache_)
+    std::cout << " out:"<<it->dims().repr();
+
+  const OpInfo *op_info_temp = op_->op_info();
+  std::cout<<" in_names: ";
+  for(auto it:op_info_temp->input_names())
+    std::cout << it <<" ";
+  std::cout<<" out_names: ";
+  for(auto it:op_info_temp->output_names())
+    std::cout << it <<" ";
+  std::cout<<"\n";
+
   kernel_->Launch();
   has_run_ = true;
 
