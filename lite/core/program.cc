@@ -709,6 +709,45 @@ void Instruction::Run() {
 #endif
 }
 
+std::map<std::string, std::vector<std::string>> Instruction::test_op_info() {
+  //(str) op_type = op_->Type()
+  //(ptr) op_info = op_->op_infor() ?
+  // op_info.input_names()
+  // op_info.output_names()
+  std::cout<<"test(op null)\n";
+  CHECK(op_) << "op null";
+  std::cout<<"test(kernel null)\n";
+  CHECK(kernel_) << "kernel null";
+  std::cout<<"test(first_epoch_)\n";
+  if (first_epoch_) {
+    first_epoch_ = false;
+    CHECK(op_->CheckShape());
+  }
+  std::cout<<"test(run_once)\n";
+  if (op_->run_once() && has_run_) {
+    return;
+  }
+  std::cout<<"test(infershape)\n";
+  op_->InferShape();
+
+  const OpInfo *op_info_temp = op_->op_info();
+  std::vector<std::string> inputs = op_info_temp->input_names();
+  std::vector<std::string> outputs = op_info_temp->output_names();
+  std::map<std::string, std::vector<std::string>> res;  
+  // key:op type+outputs_name[0]  value:vector<input_shape, output_shape> 
+  std::string res_key = op_->Type() + "+" + outputs[0];
+  std::vector<std::string> res_value;
+  for(auto it : op_->input_tensor_ptrs_cache_)
+    res_value.push_back(it->dims().repr());
+  for(auto it : op_->output_tensor_ptrs_cache_)
+    res_value.push_back(it->dims().repr());
+  res[res_key] = res_value;
+
+  kernel_->Launch();
+  has_run_ = true;
+  return res;
+}
+
 STL::ostream& operator<<(STL::ostream& os, const Instruction& other) {
   os << other.kernel_->summary() << "\t(" << other.kernel_->doc() << ")";
   return os;
