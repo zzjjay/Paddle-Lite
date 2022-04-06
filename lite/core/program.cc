@@ -661,21 +661,40 @@ void Instruction::Run() {
   std::cout<<"test(infershape)\n";
   op_->InferShape();
 
-  std::cout<<op_->Type();
-
-  for(auto it : op_->input_tensor_ptrs_cache_)
-    std::cout << " in:"<<it->dims().repr();
-  for(auto it : op_->output_tensor_ptrs_cache_)
-    std::cout << " out:"<<it->dims().repr();
-
   const OpInfo *op_info_temp = op_->op_info();
-  std::cout<<" in_names: ";
-  for(auto it:op_info_temp->input_names())
-    std::cout << it <<" ";
-  std::cout<<" out_names: ";
-  for(auto it:op_info_temp->output_names())
-    std::cout << it <<" ";
+  std::vector<std::string> inputs = op_info_temp->input_names();
+  std::vector<std::string> outputs = op_info_temp->output_names();
+  std::map<std::string, std::vector<std::string>> res;  
+  // key:op type+outputs_name[0]  value:vector<input_shape, output_shape> 
+  std::string res_key = op_->Type() + "+" + outputs[0];
+  std::vector<std::string> res_value;
+  for(auto it : op_->input_tensor_ptrs_cache_)
+    res_value.push_back(it->dims().repr());
+  for(auto it : op_->output_tensor_ptrs_cache_)
+    res_value.push_back(it->dims().repr());
+  res[res_key] = res_value;
+  for(auto it=res.begin(); it!=res.end(); it++){
+    std::cout<<"key:"<<it->first;
+    std::cout<<" value:";
+    for(auto iter : it->second)
+      std::cout<<" | "<< iter;
+  }
   std::cout<<"\n";
+
+
+//   std::cout<<op_->Type();
+//   for(auto it : op_->input_tensor_ptrs_cache_)
+//     std::cout << " in:"<<it->dims().repr();  //TODO: to string
+//   for(auto it : op_->output_tensor_ptrs_cache_)
+//     std::cout << " out:"<<it->dims().repr();
+
+//   std::cout<<" in_names: ";
+//   for(auto it:op_info_temp->input_names())
+//     std::cout << it <<" ";
+//   std::cout<<" out_names: ";
+//   for(auto it:op_info_temp->output_names())
+//     std::cout << it <<" ";
+//   std::cout<<"\n";
 
   kernel_->Launch();
   has_run_ = true;
