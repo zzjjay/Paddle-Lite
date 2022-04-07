@@ -117,7 +117,7 @@ struct Instruction {
   }
 
   // Run the instruction.
-  void Run();
+  std::map<std::string, std::vector<std::string>> Run();
   std::map<std::string, std::vector<std::string>> test_op_info();
 #ifdef LITE_WITH_METAL
   void SaveOutput();

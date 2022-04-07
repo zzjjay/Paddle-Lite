@@ -633,7 +633,7 @@ void Instruction::SaveOutput() {
 }
 #endif
 
-void Instruction::Run() {
+std::map<std::string, std::vector<std::string>> Instruction::Run() {
 #ifdef LITE_WITH_PROFILE
   CHECK(profiler_) << "Profiler pointer of kernel can not be nullptr. "
                       "When LITE_WITH_PROFILE is defined, please set a "
@@ -645,6 +645,7 @@ void Instruction::Run() {
   //(ptr) op_info = op_->op_infor() ?
   // op_info.input_names()
   // op_info.output_names()
+  std::map<std::string, std::vector<std::string>> res;  
   std::cout<<"test(op null)\n";
   CHECK(op_) << "op null";
   std::cout<<"test(kernel null)\n";
@@ -656,7 +657,7 @@ void Instruction::Run() {
   }
   std::cout<<"test(run_once)\n";
   if (op_->run_once() && has_run_) {
-    return;
+    return res;
   }
   std::cout<<"test(infershape)\n";
   op_->InferShape();
@@ -664,7 +665,7 @@ void Instruction::Run() {
   const OpInfo *op_info_temp = op_->op_info();
   std::vector<std::string> inputs = op_info_temp->input_names();
   std::vector<std::string> outputs = op_info_temp->output_names();
-  std::map<std::string, std::vector<std::string>> res;  
+  
   // key:op type+outputs_name[0]  value:vector<input_shape, output_shape> 
   std::string res_key = op_->Type() + "+" + outputs[0];
   std::vector<std::string> res_value;
@@ -698,7 +699,7 @@ void Instruction::Run() {
 
   kernel_->Launch();
   has_run_ = true;
-
+ 
 #ifdef LITE_WITH_PROFILE
   if (first_epoch_for_profiler_) {
     kernel_->SetIsKernelTest(false);
@@ -707,6 +708,7 @@ void Instruction::Run() {
     first_epoch_for_profiler_ = false;
   }
 #endif
+  return res;
 }
 
 std::map<std::string, std::vector<std::string>> Instruction::test_op_info() {
