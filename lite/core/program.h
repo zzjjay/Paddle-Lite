@@ -118,7 +118,7 @@ struct Instruction {
 
   // Run the instruction.
   std::map<std::string, std::vector<std::string>> Run();
-  std::map<std::string, std::vector<std::string>> test_op_info();
+  std::pair<std::string, std::vector<std::string>> test_op_info();
 #ifdef LITE_WITH_METAL
   void SaveOutput();
 #endif
@@ -282,6 +282,7 @@ class LITE_API RuntimeProgram {
   }
 
   void Run();
+  std::map<std::string, std::vector<std::string>> Test_op_info();
 #ifdef LITE_WITH_METAL
   void SaveOutput();
 #endif

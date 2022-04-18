@@ -479,6 +479,56 @@ void RuntimeProgram::Run() {
 #endif
 }
 
+std::map<std::string, std::vector<std::string>> RuntimeProgram::Test_op_info(){
+    int idx = -1;
+
+    std::map<std::string, std::vector<std::string>> res;  
+    auto& insts = instructions_[kRootBlockIdx];
+    for (auto& inst : insts) {
+        ++idx;
+#if !defined(LITE_WITH_FPGA) && !defined(LITE_WITH_METAL)
+    if (inst.is_feed_fetch_op()) continue;
+#endif
+#ifdef LITE_WITH_NVTX
+    NVTXRangeAnnotation annotation = annotator.AnnotateBlock();
+    nvtxStringHandle_t registered_name = register_layer_names_[idx];
+    if (annotator.IsEnabled()) {
+    annotation.generate(registered_name, lite::Color::Runner);
+    }
+#endif
+#ifdef LITE_WITH_CUDA
+    if (inst.need_sync()) {
+    inst.Sync();
+    }
+#endif
+
+#ifdef LITE_WITH_FPGA
+    monitor.preRun(inst);
+#endif
+
+#ifdef LITE_WITH_OPENCL
+    // delegate flush judgement to specify target , it is too heavy for Inst
+    inst.Flush(idx);
+#endif
+        std::pair<std::string, std::vector<std::string>> op_info_shape;  
+        op_info_shape = inst.test_op_info();
+        res.insert(op_info_shape);
+#ifdef LITE_WITH_FPGA
+    monitor.postRun(inst);
+#endif
+
+#ifdef LITE_WITH_PRECISION_PROFILE
+#ifndef LITE_WITH_FPGA
+    if (inst.op()->Type() != "while") {
+    precision_profiler_summary +=
+        inst_precision_profiler.GetInstPrecision(&inst);
+    }
+#endif
+#endif  // LITE_WITH_PRECISION_PROFILE
+    }
+    return res;
+}
+
 void Program::Build(const std::shared_ptr<cpp::ProgramDesc>& program_desc) {
   CHECK(ops_.empty()) << "Executor duplicate Build found";
 
@@ -711,12 +761,12 @@ std::map<std::string, std::vector<std::string>> Instruction::Run() {
   return res;
 }
 
-std::map<std::string, std::vector<std::string>> Instruction::test_op_info() {
+std::pair<std::string, std::vector<std::string>> Instruction::test_op_info() {
   //(str) op_type = op_->Type()
   //(ptr) op_info = op_->op_infor() ?
   // op_info.input_names()
   // op_info.output_names()
-  std::map<std::string, std::vector<std::string>> res;  
+  std::pair<std::string, std::vector<std::string>> res;  
 
   std::cout<<"test(op null)\n";
   CHECK(op_) << "op null";
@@ -745,8 +795,13 @@ std::map<std::string, std::vector<std::string>> Instruction::test_op_info() {
     res_value.push_back(it->dims().repr());
   for(auto it : op_->output_tensor_ptrs_cache_)
     res_value.push_back(it->dims().repr());
-  res[res_key] = res_value;
-
+  res = std::make_pair(res_key, res_value);
+  
+  std::cout<<"key:"<<res.first;
+  std::cout<<" value:";
+  for(auto iter : res.second)
+      std::cout<<" | "<< iter;
+  std::cout<<"\n";
   kernel_->Launch();
   has_run_ = true;
   return res;
