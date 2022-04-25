@@ -46,6 +46,9 @@ void CxxPaddleApiImpl::Init(const lite_api::CxxConfig &config) {
   threads_ = config.threads();
 #ifdef LITE_USE_THREAD_POOL
   int thread_num = ThreadPool::Init(threads_);
+  if (thread_num > 1) {
+    ThreadPool::AcquireThreadPool();
+  }
 #endif
   if (!status_is_cloned_) {
     auto places = config.valid_places();
@@ -88,6 +91,8 @@ void CxxPaddleApiImpl::Init(const lite_api::CxxConfig &config) {
         raw_predictor_->scope(), config.nnadapter_device_names());
     Context<TargetType::kNNAdapter>::SetNNAdapterContextProperties(
         raw_predictor_->scope(), config.nnadapter_context_properties());
+    Context<TargetType::kNNAdapter>::SetNNAdapterContextCallback(
+        raw_predictor_->scope(), config.nnadapter_context_callback());
     Context<TargetType::kNNAdapter>::SetNNAdapterModelCacheDir(
         raw_predictor_->scope(), config.nnadapter_model_cache_dir());
     Context<TargetType::kNNAdapter>::SetNNAdapterModelCacheBuffers(
@@ -223,7 +228,7 @@ void CxxPaddleApiImpl::Init(const lite_api::CxxConfig &config) {
 
 CxxPaddleApiImpl::~CxxPaddleApiImpl() {
 #ifdef LITE_USE_THREAD_POOL
-  ThreadPool::Destroy();
+  ThreadPool::ReleaseThreadPool();
 #endif
 }
 

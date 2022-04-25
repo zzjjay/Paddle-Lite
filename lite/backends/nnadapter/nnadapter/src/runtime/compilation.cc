@@ -44,7 +44,9 @@ static const char* NNADAPTER_RUNTIME_CACHE_CACHE_OUTPUT_INDEXES_KEY =
 static const char* NNADAPTER_RUNTIME_CACHE_CACHE_MODEL_BUFFER_KEY =
     "cache_%d_model_buffer";
 
-void* AccessSubmodelInput(void* memory, NNAdapterOperandType* type) {
+void* AccessSubmodelInput(void* memory,
+                          NNAdapterOperandType* type,
+                          void* device_buffer) {
   NNADAPTER_CHECK(memory);
   NNADAPTER_CHECK(type);
   auto buffer = static_cast<Compilation::Buffer*>(memory);
@@ -55,16 +57,18 @@ void* AccessSubmodelInput(void* memory, NNAdapterOperandType* type) {
          dimension_count * sizeof(int32_t));
   type->dimensions.count = dimension_count;
   NNADAPTER_CHECK(buffer->data);
-  NNADAPTER_VLOG(5) << "Model input type:" << std::endl
-                    << OperandTypeToString(type);
+  NNADAPTER_VLOG(5) << "Input:" << std::endl
+                    << OperandTypeToString(type) << std::endl
+                    << " data=@0x" << std::hex
+                    << reinterpret_cast<int64_t>(buffer->data);
   return buffer->data;
 }
 
-void* AccessSubmodelOutput(void* memory, NNAdapterOperandType* type) {
+void* AccessSubmodelOutput(void* memory,
+                           NNAdapterOperandType* type,
+                           void* device_buffer) {
   NNADAPTER_CHECK(memory);
   NNADAPTER_CHECK(type);
-  NNADAPTER_VLOG(5) << "Model output type:" << std::endl
-                    << OperandTypeToString(type);
   auto buffer = static_cast<Compilation::Buffer*>(memory);
   auto dimension_count = type->dimensions.count;
   NNADAPTER_CHECK_GT(dimension_count, 0);
@@ -83,6 +87,10 @@ void* AccessSubmodelOutput(void* memory, NNAdapterOperandType* type) {
     buffer->size = length;
   }
   NNADAPTER_CHECK(buffer->data);
+  NNADAPTER_VLOG(5) << "Output:" << std::endl
+                    << OperandTypeToString(type) << std::endl
+                    << " data=@0x" << std::hex
+                    << reinterpret_cast<int64_t>(buffer->data);
   return buffer->data;
 }
 
@@ -138,7 +146,8 @@ int Compilation::Execute(std::vector<core::Argument>* input_arguments,
       const std::vector<int>& indexes,
       std::vector<core::Argument>* arguments,
       std::vector<std::shared_ptr<Buffer>>* buffers,
-      void* (*access)(void* memory, NNAdapterOperandType* type)) {
+      void* (*access)(
+          void* memory, NNAdapterOperandType* type, void* device_buffer)) {
     for (size_t i = 0; i < indexes.size(); i++) {
       core::Argument arg;
       arg.index = i;

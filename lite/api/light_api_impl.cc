@@ -49,6 +49,9 @@ void LightPredictorImpl::Init(const lite_api::MobileConfig& config) {
   threads_ = config.threads();
 #ifdef LITE_USE_THREAD_POOL
   int thread_num = ThreadPool::Init(threads_);
+  if (thread_num > 1) {
+    ThreadPool::AcquireThreadPool();
+  }
 #endif
 
 #ifdef LITE_WITH_METAL
@@ -69,6 +72,8 @@ void LightPredictorImpl::Init(const lite_api::MobileConfig& config) {
       raw_predictor_->scope(), config.nnadapter_device_names());
   Context<TargetType::kNNAdapter>::SetNNAdapterContextProperties(
       raw_predictor_->scope(), config.nnadapter_context_properties());
+  Context<TargetType::kNNAdapter>::SetNNAdapterContextCallback(
+      raw_predictor_->scope(), config.nnadapter_context_callback());
   Context<TargetType::kNNAdapter>::SetNNAdapterModelCacheDir(
       raw_predictor_->scope(), config.nnadapter_model_cache_dir());
   Context<TargetType::kNNAdapter>::SetNNAdapterModelCacheBuffers(
@@ -94,7 +99,7 @@ void LightPredictorImpl::Init(const lite_api::MobileConfig& config) {
 
 LightPredictorImpl::~LightPredictorImpl() {
 #ifdef LITE_USE_THREAD_POOL
-  ThreadPool::Destroy();
+  ThreadPool::ReleaseThreadPool();
 #endif
 }
 

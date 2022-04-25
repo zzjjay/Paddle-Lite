@@ -14,6 +14,7 @@
 
 #include "driver/device.h"
 #include "driver/nvidia_tensorrt/engine.h"
+#include "driver/nvidia_tensorrt/program.h"
 #include "utility/logging.h"
 #include "utility/micros.h"
 
@@ -38,12 +39,15 @@ void CloseDevice(void* device) {
   }
 }
 
-int CreateContext(void* device, const char* properties, void** context) {
+int CreateContext(void* device,
+                  const char* properties,
+                  int (*callback)(int event_id, void* user_data),
+                  void** context) {
   if (!device || !context) {
     return NNADAPTER_INVALID_PARAMETER;
   }
   auto d = reinterpret_cast<Device*>(device);
-  auto c = new Context(d, properties);
+  auto c = new Context(d, properties, callback);
   if (!c) {
     *context = nullptr;
     NNADAPTER_LOG(FATAL) << "Failed to create context for nvidia_tensorrt.";
@@ -105,9 +109,8 @@ int ExecuteProgram(void* program,
 }  // namespace nvidia_tensorrt
 }  // namespace nnadapter
 
-NNADAPTER_EXPORT nnadapter::driver::Device NNADAPTER_AS_SYM2(
-    NNADAPTER_DEVICE_SYMBOL) = {
-    .name = NNADAPTER_AS_STR2(NNADAPTER_DEVICE_NAME),
+NNADAPTER_EXPORT nnadapter::driver::Device NNADAPTER_AS_SYM2(DEVICE_NAME) = {
+    .name = NNADAPTER_AS_STR2(DEVICE_NAME),
     .vendor = "Nvidia",
     .type = NNADAPTER_ACCELERATOR,
     .version = 1,

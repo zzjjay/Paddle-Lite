@@ -38,7 +38,10 @@ void CloseDevice(void* device) {
   }
 }
 
-int CreateContext(void* device, const char* properties, void** context) {
+int CreateContext(void* device,
+                  const char* properties,
+                  int (*callback)(int event_id, void* user_data),
+                  void** context) {
   if (!device || !context) {
     return NNADAPTER_INVALID_PARAMETER;
   }
@@ -105,9 +108,8 @@ int ExecuteProgram(void* program,
 }  // namespace huawei_ascend_npu
 }  // namespace nnadapter
 
-NNADAPTER_EXPORT nnadapter::driver::Device NNADAPTER_AS_SYM2(
-    NNADAPTER_DEVICE_SYMBOL) = {
-    .name = NNADAPTER_AS_STR2(NNADAPTER_DEVICE_NAME),
+NNADAPTER_EXPORT nnadapter::driver::Device NNADAPTER_AS_SYM2(DEVICE_NAME) = {
+    .name = NNADAPTER_AS_STR2(DEVICE_NAME),
     .vendor = "Huawei",
     .type = NNADAPTER_ACCELERATOR,
     .version = 1,
